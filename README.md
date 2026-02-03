@@ -1,270 +1,117 @@
-# 🎓 Grounded Video Question Answering for Lecture Videos  
-### A Self-Refinement Framework with OCR-Grounded Reasoning
+# 🎓 Lecture-RAG for Educational Videos  
+### Grounded Video Question Answering with Self-Refinement
 
 > **TL;DR**  
 > Lecture videos (slides + blackboard + face cam) break standard Video-LLMs.  
-> This repository implements a **grounding-aware self-refinement framework** that reduces hallucinations, supports algorithmic reasoning, and works on real educational videos.
+> Lecture-RAG is a grounding-aware Video-RAG framework that reduces hallucinations and supports algorithmic reasoning in educational videos.
 
 ---
 
-## 🚨 The Problem
+## 🚨 Motivation
 
-Most Video-Language Models (Video-LLMs) are evaluated on:
+Most Video-Language Models are designed for:
 - short clips,
 - natural scenes,
-- action recognition,
-- captioning benchmarks.
+- action-centric benchmarks.
 
 **Lecture videos are fundamentally different.**
 
-They typically contain:
-- dense slides with text,
+They contain:
+- dense slides and equations,
 - handwritten blackboard content,
 - algorithm pseudocode,
-- equations,
-- partial visual context,
 - long durations with sparse visual change.
 
-As a result, existing approaches fail in **two critical ways**:
+As a result, existing systems fail in two major ways:
 
-### ❌ Failure Mode 1: Hallucination
-Models confidently answer **from prior knowledge**, even when:
-- the video is blank,
+### ❌ Hallucination
+Models answer confidently from **prior knowledge**, even when:
 - the relevant slide is not sampled,
-- the text is unreadable.
+- the video is blank or irrelevant.
 
-### ❌ Failure Mode 2: Over-Abstention
+### ❌ Over-Abstention
 When strict grounding is enforced, models respond with:
 
-> *"The answer cannot be determined from the video."*
+> *“The answer cannot be determined from the video.”*
 
-—even when the answer is **clearly derivable** from:
-- algorithm steps,
-- equations,
-- procedural descriptions shown on slides.
-
-This is especially severe for:
-- *“why”* questions,
-- algorithm explanations,
-- time/space complexity discussions,
-- reasoning over steps.
-
-👉 **No existing open-source framework robustly handles this for educational / lecture-style videos.**
+—even when answers are **logically derivable** from steps or equations shown in the lecture.
 
 ---
 
 ## 💡 Key Insight
 
-> **Grounding is not binary for lecture videos.**
+> **Grounding in educational videos is not binary.**
 
-There are **three distinct grounding regimes**:
+Lecture QA requires distinguishing between:
 
-| Grounding Type | Example | Should Answer? |
-|---------------|--------|----------------|
-| **Explicit grounding** | “What is written on the slide?” | ✅ |
-| **Derivable-from-steps grounding** | “Why initialize keys to ∞ in Prim’s algorithm?” | ✅ |
-| **Theoretical / external grounding** | “Why does Prim always produce an MST?” | ❌ |
+| Grounding Type | Example | Action |
+|---------------|--------|--------|
+| **Explicit** | “What is written on the slide?” | Answer |
+| **Derivable from steps** | “Why initialize keys to ∞ in Prim’s algorithm?” | Answer |
+| **Theoretical / external** | “Why does Prim always produce an MST?” | Abstain |
 
-Most systems collapse everything into **SUPPORTED vs UNSUPPORTED**, which is incorrect for algorithmic lectures.
-
----
-
-## 🧠 What This Repository Implements
-
-This repository introduces a **Grounding-Aware Self-Refinement Framework** for lecture videos.
+Most existing approaches collapse everything into *supported vs unsupported*, which breaks algorithmic reasoning.
 
 ---
 
-## 🧩 Core Components
+## 🧠 What is Lecture-RAG?
 
-### 1️⃣ OCR-First Grounding
+**Lecture-RAG** is a **Grounding-Aware Video RAG framework** tailored for educational videos.
 
-- OCR is treated as **primary evidence**, not a helper signal.
-- The model is explicitly instructed to use:
-  - OCR text
-  - clearly visible visual evidence
-- External knowledge is disallowed unless it is **logically derivable from shown steps**.
+It combines:
+- OCR-based evidence extraction,
+- query-aware retrieval over lecture content,
+- iterative self-refinement with grounding feedback.
 
-This prevents hallucinations while still allowing explanation-based answers.
-
----
-
-### 2️⃣ Hybrid OCR Retrieval (Query-Aware)
-
-- OCR is run on uniformly sampled frames.
-- A **hybrid search** (semantic similarity + keyword overlap) selects only OCR segments relevant to the question.
-- This removes noise from:
-  - instructor bios,
-  - course outlines,
-  - unrelated slides,
-  - decorative content.
-
----
-
-### 3️⃣ Grounding-Aware Self-Refinement
-
-Inspired by SELF-REFINE, but **adapted for multimodal grounding**.
-
-Each iteration consists of:
-1. **Answer generation**
-2. **Grounding feedback classification**
-3. **Answer refinement**
-
-Instead of binary feedback, answers are classified into:
-
-- `SUPPORTED`
-- `DERIVABLE_FROM_STEPS`
-- `PARTIALLY_SUPPORTED`
-- `UNSUPPORTED`
-
-This enables:
-- correct algorithm explanations,
-- grounded reasoning over steps,
-- correction of partial hallucinations,
-- abstention only when truly necessary.
-
----
-
-### 4️⃣ Robustness to Black-Screen & Failure Cases
-
-- On videos with no usable OCR or visual evidence, the system **correctly abstains**.
-- This prevents the common failure of confident but ungrounded answers.
-
----
-
-## 🧠 Architecture Overview
-
-# 🎓 Grounded Video Question Answering for Lecture Videos  
-### A Self-Refinement Framework with OCR-Grounded Reasoning
-
-> **TL;DR**  
-> Lecture videos (slides + blackboard + face cam) break standard Video-LLMs.  
-> This repository implements a **grounding-aware self-refinement framework** that reduces hallucinations, supports algorithmic reasoning, and works on real educational videos.
-
----
-
-## 🚨 The Problem
-
-Most Video-Language Models (Video-LLMs) are evaluated on:
-- short clips,
-- natural scenes,
-- action recognition,
-- captioning benchmarks.
-
-**Lecture videos are fundamentally different.**
-
-They typically contain:
-- dense slides with text,
-- handwritten blackboard content,
-- algorithm pseudocode,
-- equations,
-- partial visual context,
-- long durations with sparse visual change.
-
-As a result, existing approaches fail in **two critical ways**:
-
-### ❌ Failure Mode 1: Hallucination
-Models confidently answer **from prior knowledge**, even when:
-- the video is blank,
-- the relevant slide is not sampled,
-- the text is unreadable.
-
-### ❌ Failure Mode 2: Over-Abstention
-When strict grounding is enforced, models respond with:
-
-> *"The answer cannot be determined from the video."*
-
-—even when the answer is **clearly derivable** from:
-- algorithm steps,
-- equations,
-- procedural descriptions shown on slides.
-
-This is especially severe for:
-- *“why”* questions,
-- algorithm explanations,
-- time/space complexity discussions,
-- reasoning over steps.
-
-👉 **No existing open-source framework robustly handles this for educational / lecture-style videos.**
-
----
-
-## 💡 Key Insight
-
-> **Grounding is not binary for lecture videos.**
-
-There are **three distinct grounding regimes**:
-
-| Grounding Type | Example | Should Answer? |
-|---------------|--------|----------------|
-| **Explicit grounding** | “What is written on the slide?” | ✅ |
-| **Derivable-from-steps grounding** | “Why initialize keys to ∞ in Prim’s algorithm?” | ✅ |
-| **Theoretical / external grounding** | “Why does Prim always produce an MST?” | ❌ |
-
-Most systems collapse everything into **SUPPORTED vs UNSUPPORTED**, which is incorrect for algorithmic lectures.
-
----
-
-## 🧠 What This Repository Implements
-
-This repository introduces a **Grounding-Aware Self-Refinement Framework** for lecture videos.
+The goal is to:
+- prevent hallucinations,
+- avoid unnecessary abstention,
+- support algorithmic and procedural reasoning.
 
 ---
 
 ## 🧩 Core Components
 
-### 1️⃣ OCR-First Grounding
-
-- OCR is treated as **primary evidence**, not a helper signal.
-- The model is explicitly instructed to use:
+### 1️⃣ OCR-First Evidence Modeling
+- OCR is treated as **primary grounding evidence**.
+- The model is restricted to:
   - OCR text
-  - clearly visible visual evidence
-- External knowledge is disallowed unless it is **logically derivable from shown steps**.
-
-This prevents hallucinations while still allowing explanation-based answers.
+  - clearly visible visual content
+- External knowledge is disallowed unless **derivable from shown steps**.
 
 ---
 
-### 2️⃣ Hybrid OCR Retrieval (Query-Aware)
-
-- OCR is run on uniformly sampled frames.
-- A **hybrid search** (semantic similarity + keyword overlap) selects only OCR segments relevant to the question.
-- This removes noise from:
+### 2️⃣ Query-Aware OCR Retrieval
+- OCR is extracted from uniformly sampled frames.
+- A **hybrid retrieval module** (semantic + lexical) selects OCR segments relevant to the question.
+- Removes noise from:
   - instructor bios,
   - course outlines,
-  - unrelated slides,
-  - decorative content.
+  - unrelated slides.
 
 ---
 
 ### 3️⃣ Grounding-Aware Self-Refinement
-
-Inspired by SELF-REFINE, but **adapted for multimodal grounding**.
+Inspired by **SELF-REFINE**, adapted to multimodal grounding.
 
 Each iteration consists of:
-1. **Answer generation**
-2. **Grounding feedback classification**
-3. **Answer refinement**
+1. Answer generation
+2. Grounding feedback classification
+3. Answer refinement
 
-Instead of binary feedback, answers are classified into:
-
+Answers are classified as:
 - `SUPPORTED`
 - `DERIVABLE_FROM_STEPS`
 - `PARTIALLY_SUPPORTED`
 - `UNSUPPORTED`
 
-This enables:
-- correct algorithm explanations,
-- grounded reasoning over steps,
-- correction of partial hallucinations,
-- abstention only when truly necessary.
+This enables explanation-based answers without hallucination.
 
 ---
 
-### 4️⃣ Robustness to Black-Screen & Failure Cases
-
-- On videos with no usable OCR or visual evidence, the system **correctly abstains**.
-- This prevents the common failure of confident but ungrounded answers.
+### 4️⃣ Robust Failure Handling
+- On black-screen or irrelevant videos, the system **correctly abstains**.
+- Prevents confident but ungrounded outputs.
 
 ---
 
@@ -272,19 +119,10 @@ This enables:
 
 Video
 ├─ Uniform frame sampling (OCR-oriented)
-│
 ├─ OCR extraction
-│
-├─ Hybrid OCR retrieval (query-aware)
-│
-├─ Grounded Answer Generation (Qwen2.5-VL)
-│
+├─ Query-aware OCR retrieval
+├─ Grounded Answer Generation (Qwen2.5-VL / LLaVA / mPLUG-Owl)
 ├─ Grounding Feedback
-│ ├─ SUPPORTED
-│ ├─ DERIVABLE_FROM_STEPS
-│ ├─ PARTIALLY_SUPPORTED
-│ └─ UNSUPPORTED
-│
 └─ Iterative Self-Refinement
 ↓
 Final Grounded Answer
@@ -293,86 +131,62 @@ Final Grounded Answer
 
 ---
 
-## 🔬 Why This Is Novel
-
-To the best of our knowledge:
-
-- ❌ No prior open-source framework explicitly targets **lecture-style videos** with:
-  - slides + blackboard + face cam
-- ❌ No system properly handles **algorithmic “why” questions** without hallucinating or over-abstaining
-- ❌ SELF-REFINE has not been adapted for **OCR-grounded multimodal reasoning**
-
-This work demonstrates that:
-
-> **Strict grounding without step-derivable reasoning breaks educational QA.**
-
----
-
 ## 📁 Repository Structure
 
-.
-├── self_refine_framework_Qwen2_5.py # Main self-refinement pipeline
+LectureRAG/
+├── framework.py # Main pipeline (OCR + retrieval + refinement)
 ├── hybrid_search.py # Query-aware OCR retrieval
-├── nanonetOCR/ # OCR module
-├── samples/ # Example lecture videos
+├── run_ocr.py # OCR execution script
+├── nanonetOCR.py # OCR wrapper
+├── self_refine_framework_llavaNext.py # LLaVA-NeXT variant
+├── self_refine_framework_mPlugOwl.py # mPLUG-Owl variant
+├── self_refine_framework_qwen2_5.py # Qwen2.5-VL variant
+├── frameworkocr_*.pkl # Cached OCR outputs
+├── sampled_frames.jpeg # Example sampled frames
+├── samples/ # Sample lecture videos
 ├── README.md
-
 
 ---
 
 ## 🚀 How to Run
 
 ```bash
-python self_refine_framework_Qwen2_5.py
+python self_refine_framework_qwen2_5.py
 
 
 Requirements
 
-GPU compatible with Qwen2.5-VL
+GPU compatible with Qwen2.5-VL / LLaVA-NeXT / mPLUG-Owl
 
 Python ≥ 3.9
 
-Dependencies:
+transformers, torch, decord, opencv
 
-transformers
+NanoNet OCR (or compatible OCR backend)
 
-decord
+📚 Inspiration & Related Work
 
-opencv
+This project is inspired by:
 
-torch
+SELF-REFINE: Iterative Refinement with Self-Feedback, NeurIPS 2023
 
-NanoNet OCR
+Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension, NeurIPS 2025
 
-🧪 Example Use Cases
-
-Algorithm explanation lectures (Prim’s, BFS, DFS, Sorting)
-
-Blackboard-heavy teaching videos
-
-MOOCs (NPTEL, Coursera, edX)
-
-Long educational videos with sparse visual change
+Lecture-RAG adapts these ideas to the educational video domain, introducing grounding-aware refinement and OCR-centric retrieval.
 
 
 🔮 Future Work
 
-This repository focuses on grounded reasoning.
-Planned extensions include:
-
 🔊 Automatic Speech Recognition (ASR) integration
 
-🎯 Query-aware frame sampling (beyond uniform OCR sampling)
+🎯 Fully query-aware frame sampling
 
 📊 Evaluation on educational video QA benchmarks
 
 🧠 Temporal reasoning across slide transitions
 
-⚡ Performance optimization for long videos
 
 📌 Takeaway
 
-Lecture videos are not “just another video domain”.
-They require procedural grounding, OCR-aware reasoning, and careful self-refinement.
-
-This repository is a step toward trustworthy Video Question Answering for education.
+Lecture videos are not just another video domain.
+They require OCR-aware grounding, step-based reasoning, and careful self-refinement.
