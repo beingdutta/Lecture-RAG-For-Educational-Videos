@@ -9,9 +9,10 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from nanonetOCR import NanonetOCR
 from decord import VideoReader, cpu
+from hybrid_search import hybrid_search
 from qwen_vl_utils import process_vision_info
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
-from hybrid_search import hybrid_search
+
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 print('Current Env:', os.getenv("CONDA_DEFAULT_ENV"))
